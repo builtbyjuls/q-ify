@@ -1,11 +1,13 @@
 package com.qify;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import javax.sql.DataSource;
 
+import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,6 +27,9 @@ class QifyApplicationTests {
     @Autowired
     private DataSource dataSource;
 
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
+
     @Test
     void contextLoadsWithPostgreSql() throws Exception {
         try (Connection connection = dataSource.getConnection()) {
@@ -32,6 +37,19 @@ class QifyApplicationTests {
 
             assertEquals("PostgreSQL", metadata.getDatabaseProductName());
             assertEquals(18, metadata.getDatabaseMajorVersion());
+            assertTrue(entityManagerFactory.isOpen());
+
+            try (var statement = connection.createStatement();
+                    var resultSet = statement.executeQuery("""
+                            SELECT COUNT(*)
+                            FROM information_schema.tables
+                            WHERE table_schema = 'public'
+                              AND table_type = 'BASE TABLE'
+                              AND table_name <> 'flyway_schema_history'
+                            """)) {
+                resultSet.next();
+                assertEquals(0, resultSet.getInt(1));
+            }
         }
     }
 }
