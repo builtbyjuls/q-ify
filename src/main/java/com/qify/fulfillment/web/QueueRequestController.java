@@ -1,9 +1,11 @@
 package com.qify.fulfillment.web;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import com.qify.fulfillment.application.QueueRequestCreationService;
+import com.qify.fulfillment.domain.QueueRequest;
 import com.qify.fulfillment.domain.QueueRequestStatus;
 import com.qify.fulfillment.persistence.QueueRequestRepository;
 import com.qify.identity.application.CurrentActor;
@@ -49,6 +51,18 @@ public class QueueRequestController {
         requireCustomer(currentActor, "Only customers may view queue requests.");
         var request = queueRequestRepository.findOwnedWithOfferingAndVenue(id, currentActor.id())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Queue request was not found."));
+        return toResponse(request);
+    }
+
+    @GetMapping
+    public List<QueueRequestResponse> list(CurrentActor currentActor) {
+        requireCustomer(currentActor, "Only customers may view queue requests.");
+        return queueRequestRepository.findAllOwnedWithOfferingAndVenue(currentActor.id()).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private QueueRequestResponse toResponse(QueueRequest request) {
         var offering = request.getServiceOffering();
         var venue = offering.getVenue();
         return new QueueRequestResponse(request.getId(), offering.getId(), venue.getId(), venue.getName(),
