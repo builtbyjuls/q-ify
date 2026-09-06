@@ -40,9 +40,9 @@ public class QueueRequestCreationService {
     public UUID create(UUID customerId, UUID serviceOfferingId, Instant scheduledFor,
             int expectedQueueMinutes, int arrivalNoticeMinutes) {
         Actor customer = actorRepository.findById(customerId)
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
+                .orElseThrow(() -> new QueueRequestCreationResourceNotFoundException("Customer was not found."));
         ServiceOffering serviceOffering = serviceOfferingRepository.findById(serviceOfferingId)
-                .orElseThrow(() -> new IllegalArgumentException("Service offering not found: " + serviceOfferingId));
+                .orElseThrow(() -> new QueueRequestCreationResourceNotFoundException("Service offering was not found."));
         Instant now = clock.instant();
 
         QueueRequest request = QueueRequest.create(UUID.randomUUID(), customer, serviceOffering,
