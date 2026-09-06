@@ -42,6 +42,19 @@ public class RequestTimelineEntry {
     protected RequestTimelineEntry() {
     }
 
+    public static RequestTimelineEntry initialFor(QueueRequest request, Instant now) {
+        if (request == null || now == null) {
+            throw new InvalidQueueRequestCreationException("Required timeline value is missing");
+        }
+
+        RequestTimelineEntry entry = new RequestTimelineEntry();
+        entry.request = request;
+        entry.status = request.getStatus();
+        entry.performedByActor = request.getCustomer();
+        entry.occurredAt = now;
+        return entry;
+    }
+
     public Long getId() {
         return id;
     }
