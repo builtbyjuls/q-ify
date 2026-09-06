@@ -60,7 +60,7 @@ class QifyApplicationTests {
                               AND table_name <> 'flyway_schema_history'
                             """)) {
                 resultSet.next();
-                assertEquals(4, resultSet.getInt(1));
+                assertEquals(6, resultSet.getInt(1));
             }
         }
     }
