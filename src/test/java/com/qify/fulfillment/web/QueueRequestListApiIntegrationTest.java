@@ -13,8 +13,6 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -34,6 +32,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+
+import com.qify.testsupport.QifyDatabaseSnapshot;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -68,7 +68,7 @@ class QueueRequestListApiIntegrationTest {
         insertRequest("20000000-0000-0000-0000-000000000002", owner, Instant.parse("2026-09-07T02:00:00Z"));
         insertRequest("20000000-0000-0000-0000-000000000004", other, Instant.parse("2026-09-09T02:00:00Z"));
 
-        var databaseBefore = snapshot();
+        var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
         mockMvc.perform(get("/api/v1/queue-requests").header("X-Actor-Id", owner))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
@@ -88,30 +88,30 @@ class QueueRequestListApiIntegrationTest {
                 .andExpect(jsonPath("$[0].createdAt").value("2026-09-08T02:00:00Z"))
                 .andExpect(jsonPath("$[1].id").value("20000000-0000-0000-0000-000000000001"))
                 .andExpect(jsonPath("$[2].id").value("20000000-0000-0000-0000-000000000002"));
-        assertEquals(databaseBefore, snapshot());
+        assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
     }
 
     @Test
     void customerWithNoRequestsGetsEmptyArrayWithoutRows() throws Exception {
         String owner = "10000000-0000-0000-0000-000000000103";
         insertCustomer(owner, "list-empty-103");
-        var databaseBefore = snapshot();
+        var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
         mockMvc.perform(get("/api/v1/queue-requests").header("X-Actor-Id", owner))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(content().json("[]"));
-        assertEquals(databaseBefore, snapshot());
+        assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
     }
 
     @Test
     void runnerAndAdminAreForbiddenWithoutRows() throws Exception {
         for (String actor : new String[] { RUNNER_ID, ADMIN_ID }) {
-            var databaseBefore = snapshot();
+            var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
             mockMvc.perform(get("/api/v1/queue-requests").header("X-Actor-Id", actor))
                     .andExpect(status().isForbidden())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                     .andExpect(jsonPath("$.detail").value("Only customers may view queue requests."));
-            assertEquals(databaseBefore, snapshot());
+            assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
         }
     }
 
@@ -121,11 +121,11 @@ class QueueRequestListApiIntegrationTest {
                 new RequestCase(get("/api/v1/queue-requests"), "Actor identity is required."),
                 new RequestCase(get("/api/v1/queue-requests").header("X-Actor-Id", "not-a-uuid"),
                         "Actor identity is invalid.") }) {
-            var databaseBefore = snapshot();
+            var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
             var result = mockMvc.perform(requestCase.request()).andExpect(status().isUnauthorized())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
             result.andExpect(jsonPath("$.detail").value(requestCase.detail()));
-            assertEquals(databaseBefore, snapshot());
+            assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
         }
     }
 
@@ -163,49 +163,9 @@ class QueueRequestListApiIntegrationTest {
         }
     }
 
-    private DatabaseSnapshot snapshot() {
-        List<TableSnapshot> tables = new ArrayList<>();
-        tables.add(snapshotTable("actors",
-                "SELECT id, alias, role FROM actors ORDER BY id"));
-        tables.add(snapshotTable("runner_profiles",
-                "SELECT id, actor_id, verified, availability FROM runner_profiles ORDER BY id"));
-        tables.add(snapshotTable("venues",
-                "SELECT id, name FROM venues ORDER BY id"));
-        tables.add(snapshotTable("service_offerings",
-                "SELECT id, venue_id, category, delegation_approved, active FROM service_offerings ORDER BY id"));
-        tables.add(snapshotTable("queue_requests",
-                "SELECT id, customer_id, service_offering_id, status, scheduled_for, expected_queue_minutes, arrival_notice_minutes, created_at FROM queue_requests ORDER BY id"));
-        tables.add(snapshotTable("request_timeline",
-                "SELECT id, request_id, status, performed_by_actor_id, occurred_at FROM request_timeline ORDER BY id"));
-        return new DatabaseSnapshot(List.copyOf(tables));
-    }
-
-    private TableSnapshot snapshotTable(String table, String sql) {
-        List<List<String>> rows = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection(); var statement = connection.createStatement();
-                var result = statement.executeQuery(sql)) {
-            while (result.next()) {
-                List<String> row = new ArrayList<>();
-                for (int column = 1; column <= result.getMetaData().getColumnCount(); column++) {
-                    row.add(String.valueOf(result.getObject(column)));
-                }
-                rows.add(List.copyOf(row));
-            }
-            return new TableSnapshot(table, List.copyOf(rows));
-        } catch (SQLException exception) {
-            throw new IllegalStateException(exception);
-        }
-    }
-
     @FunctionalInterface
     private interface SqlBinder {
         void bind(PreparedStatement statement) throws SQLException;
-    }
-
-    private record TableSnapshot(String table, List<List<String>> rows) {
-    }
-
-    private record DatabaseSnapshot(List<TableSnapshot> tables) {
     }
 
     private record RequestCase(MockHttpServletRequestBuilder request, String detail) {

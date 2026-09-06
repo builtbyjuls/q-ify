@@ -12,8 +12,6 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -32,6 +30,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+
+import com.qify.testsupport.QifyDatabaseSnapshot;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -60,8 +60,7 @@ class QueueRequestDetailApiIntegrationTest {
     @Test
     void ownerGetsExactRequestDetailWithoutCreatingRows() throws Exception {
         String id = createRequest(CUSTOMER_ID);
-        var requestsBefore = snapshot("queue_requests");
-        var timelineBefore = snapshot("request_timeline");
+        var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
 
         mockMvc.perform(get("/api/v1/queue-requests/" + id).header("X-Actor-Id", CUSTOMER_ID))
                 .andExpect(status().isOk())
@@ -78,71 +77,60 @@ class QueueRequestDetailApiIntegrationTest {
                 .andExpect(jsonPath("$.arrivalNoticeMinutes").value(15))
                 .andExpect(jsonPath("$.createdAt").value(NOW.toString()));
 
-        assertEquals(requestsBefore, snapshot("queue_requests"));
-        assertEquals(timelineBefore, snapshot("request_timeline"));
+        assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
     }
 
     @Test
     void nonexistentRequestReturnsSafeNotFoundWithoutRows() throws Exception {
-        var requestsBefore = snapshot("queue_requests");
-        var timelineBefore = snapshot("request_timeline");
+        var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
         mockMvc.perform(get("/api/v1/queue-requests/" + UUID.randomUUID()).header("X-Actor-Id", CUSTOMER_ID))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.detail").value("Queue request was not found."));
-        assertEquals(requestsBefore, snapshot("queue_requests"));
-        assertEquals(timelineBefore, snapshot("request_timeline"));
+        assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
     }
 
     @Test
     void otherCustomersRequestReturnsIdenticalNotFound() throws Exception {
         insertOtherCustomer();
         String id = createRequest(OTHER_CUSTOMER_ID);
-        var requestsBefore = snapshot("queue_requests");
-        var timelineBefore = snapshot("request_timeline");
+        var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
         mockMvc.perform(get("/api/v1/queue-requests/" + id).header("X-Actor-Id", CUSTOMER_ID))
                 .andExpect(status().isNotFound())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.detail").value("Queue request was not found."));
-        assertEquals(requestsBefore, snapshot("queue_requests"));
-        assertEquals(timelineBefore, snapshot("request_timeline"));
+        assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
     }
 
     @Test
     void runnersAndAdminsAreForbiddenWithoutRows() throws Exception {
         String id = createRequest(CUSTOMER_ID);
         for (String actor : new String[] { RUNNER_ID, ADMIN_ID }) {
-            var requestsBefore = snapshot("queue_requests");
-            var timelineBefore = snapshot("request_timeline");
+            var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
             mockMvc.perform(get("/api/v1/queue-requests/" + id).header("X-Actor-Id", actor))
                     .andExpect(status().isForbidden())
                     .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                     .andExpect(jsonPath("$.detail").value("Only customers may view queue requests."));
-            assertEquals(requestsBefore, snapshot("queue_requests"));
-            assertEquals(timelineBefore, snapshot("request_timeline"));
+            assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
         }
     }
 
     @Test
     void missingAndMalformedActorAreUnauthorizedWithoutRows() throws Exception {
         String id = UUID.randomUUID().toString();
-        var requestsBefore = snapshot("queue_requests");
-        var timelineBefore = snapshot("request_timeline");
+        var databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
         mockMvc.perform(get("/api/v1/queue-requests/" + id))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.detail").value("Actor identity is required."));
-        assertEquals(requestsBefore, snapshot("queue_requests"));
-        assertEquals(timelineBefore, snapshot("request_timeline"));
+        assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
 
-        requestsBefore = snapshot("queue_requests");
-        timelineBefore = snapshot("request_timeline");
+        databaseBefore = QifyDatabaseSnapshot.capture(dataSource);
         mockMvc.perform(get("/api/v1/queue-requests/" + id).header("X-Actor-Id", "not-a-uuid"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.detail").value("Actor identity is invalid."));
-        assertEquals(requestsBefore, snapshot("queue_requests"));
-        assertEquals(timelineBefore, snapshot("request_timeline"));
+        assertEquals(databaseBefore, QifyDatabaseSnapshot.capture(dataSource));
     }
 
     private String createRequest(String actorId) throws Exception {
@@ -164,29 +152,6 @@ class QueueRequestDetailApiIntegrationTest {
         } catch (SQLException exception) {
             throw new IllegalStateException(exception);
         }
-    }
-
-    private TableSnapshot snapshot(String table) {
-        String sql = table.equals("queue_requests")
-                ? "SELECT id, customer_id, service_offering_id, status, scheduled_for, expected_queue_minutes, arrival_notice_minutes, created_at FROM queue_requests ORDER BY id"
-                : "SELECT id, request_id, status, performed_by_actor_id, occurred_at FROM request_timeline ORDER BY id";
-        List<List<String>> rows = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection(); var statement = connection.createStatement();
-                var result = statement.executeQuery(sql)) {
-            while (result.next()) {
-                List<String> row = new ArrayList<>();
-                for (int column = 1; column <= result.getMetaData().getColumnCount(); column++) {
-                    row.add(String.valueOf(result.getObject(column)));
-                }
-                rows.add(List.copyOf(row));
-            }
-            return new TableSnapshot(List.copyOf(rows));
-        } catch (SQLException exception) {
-            throw new IllegalStateException(exception);
-        }
-    }
-
-    private record TableSnapshot(List<List<String>> rows) {
     }
 
     @TestConfiguration(proxyBeanMethods = false)
