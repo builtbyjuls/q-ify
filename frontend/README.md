@@ -1,6 +1,6 @@
 # Q-ify Frontend
 
-This Angular application is the Week 1 browser-to-backend risk probe.
+This Angular application is the FRONTEND-01 browser-to-backend risk probe.
 
 ## Requirements
 

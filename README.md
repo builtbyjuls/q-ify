@@ -17,7 +17,7 @@ only to fictional private venues that explicitly permit queue handoffs.
 - [Full project plan](docs/project-plan.md)
 - [Verified toolchain](docs/architecture/toolchain.md)
 - [Review checklist](docs/review-checklist.md)
-- [Week 1 backlog](docs/work-items/week-01.md)
+- [Foundation and hosting work items](docs/work-items/foundation-and-hosting.md)
 
 ## Repository Layout
 

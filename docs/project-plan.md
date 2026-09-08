@@ -4,7 +4,7 @@
 
 **Primary goal:** Demonstrate current senior Java engineering and end-to-end product delivery
 
-**Core release target:** Eight focused weeks at about 20 hours per week
+**Core release target:** Eight dependency-gated delivery milestones
 
 **Frontend:** Angular 21 LTS and TypeScript
 
@@ -17,7 +17,7 @@ Build Q-ify as a deployed full-stack simulation of a venue-authorized queue-hand
 
 The core release will demonstrate one complete customer-to-partner workflow. The main engineering evidence will be explicit domain rules, atomic job claiming, object-level authorization, auditable live updates, and measurable tests.
 
-Java and Spring Boot remain the primary technical signal. Angular provides a polished responsive interface and proves that the system can be delivered end to end. If weekly availability is below 20 focused hours, extend the calendar without adding features. Week 8 is reserved for stabilization and presentation rather than new product behavior.
+Java and Spring Boot remain the primary technical signal. Angular provides a polished responsive interface and proves that the system can be delivered end to end. Milestones advance when their verification gates pass. Calendar availability changes target dates, not scope. M8 is reserved for stabilization and presentation rather than new product behavior.
 
 ## Portfolio Objective
 
@@ -248,7 +248,7 @@ Deploy one JVM, one Docker image, and one Render web service. Backend modules re
 
 The free Render instance is a portfolio environment rather than a production environment. The deployment spike must account for its 512 MB memory limit, monthly allowances, and idle shutdown behavior. Keep the database connection pool small and set a measured JVM memory budget. Document Render's provider-controlled loading response while the service wakes, show a post-start notice explaining free-tier cold starts, and retain the recorded demonstration as a fallback. Do not add an uptime-pinging service.
 
-Use a direct Neon JDBC URL with TLS required for both Flyway and the runtime datasource. Set `SPRING_FLYWAY_URL` explicitly so migrations never use a pooled PgBouncer URL. Cap Hikari at three connections and define bounded connection and validation timeouts. Week 1 must test first startup, migration, Neon resume after scale-to-zero, Render restart, and recovery from a database connection timeout.
+Use a direct Neon JDBC URL with TLS required for both Flyway and the runtime datasource. Set `SPRING_FLYWAY_URL` explicitly so migrations never use a pooled PgBouncer URL. Cap Hikari at three connections and define bounded connection and validation timeouts. M1 must test first startup, migration, Neon resume after scale-to-zero, Render restart, and recovery from a database connection timeout.
 
 Record the Render and Neon free-plan quotas in the deployment runbook. Do not add a billable payment method solely for Q-ify; if one already exists, configure every available spend limit and alert. Disable preview environments. Deploy only after protected-main CI passes by using Render's `checksPass` trigger or a manual release. If a quota is exhausted, allow suspension and direct reviewers to the recorded demonstration and local startup instructions.
 
@@ -322,7 +322,7 @@ Every request transition to `COMPLETED`, `CANCELLED`, or `EXPIRED` must set the 
 - Docker Compose.
 - AWS SDK for Java v2, a pinned Floci container, and Terraform in the `v1.2` local cloud lab.
 
-Spring Boot 4.1 is the current supported stable line and supports Java 21. Use the Spring Boot 4.1 dependency management baseline for its managed JUnit and Testcontainers versions instead of overriding them independently. Pin the Spring Boot parent and Springdoc patches in `pom.xml`, verify `/v3/api-docs` and the PostgreSQL Testcontainers suite during Week 1, and record the resolved versions and rationale in the repository.
+Spring Boot 4.1 is the current supported stable line and supports Java 21. Use the Spring Boot 4.1 dependency management baseline for its managed JUnit and Testcontainers versions instead of overriding them independently. Pin the Spring Boot parent and Springdoc patches in `pom.xml`, verify `/v3/api-docs` and the PostgreSQL Testcontainers suite during M1, and record the resolved versions and rationale in the repository.
 
 ### Frontend
 
@@ -410,7 +410,7 @@ The public demo must:
 - Limit each workspace to five requests and each request to fifty progress events.
 - Limit each participant to thirty state-changing commands per minute.
 - Permit one SSE stream per participant and two per workspace. Opening a replacement closes the participant's earlier stream.
-- Set a global SSE connection cap from the measured Week 1 hosting result.
+- Set a global SSE connection cap from the measured M1 hosting result.
 - Return HTTP 429 with a clear retry message when a public-demo limit is reached.
 
 ### Required Security Tests
@@ -478,18 +478,23 @@ Close the stream on terminal state and Angular component destruction. Native `Ev
 
 Do not target a headline coverage percentage. Each test must protect a business rule, integration boundary, or visible recovery path.
 
-## Eight Week Delivery Plan
+## Dependency-Gated Delivery Milestones
 
-The schedule uses vertical slices so Angular and Spring integrate early. A local happy path works by Week 4. The first public release appears in Week 5. Job applications can reference Q-ify at that point.
+The milestones use vertical slices so Angular and Spring integrate early.
+Milestone numbers express delivery order, not elapsed time. A task may start
+whenever its dependencies are satisfied, and independent work may overlap when
+path ownership permits. Calendar changes do not change scope. A local happy
+path is the M4 gate. The first public release is the M5 gate. Job applications
+can reference Q-ify at that point.
 
-### Week 1 Deployable Skeleton and Hosting Spike
+### M1: Deployable Foundation and Hosting Validation
 
 **Objective:** Create the exact deployable skeleton and test the riskiest hosting assumptions before feature work.
 
 - Create the monorepo, minimal Spring Boot application, minimal Angular application with one deep route, wrappers, and multi-stage Docker build.
 - Add a Flyway smoke migration, Neon JDBC connection, health endpoint, minimal session and CSRF-protected probe, and SSE heartbeat endpoint.
-- Draft the venue eligibility, lifecycle, projection, and authorization tables; complete them in Week 2.
-- Deploy this exact skeleton to one free Render web service with Neon PostgreSQL. Promote it into Week 2 rather than replacing it with a throwaway probe.
+- Draft the venue eligibility, lifecycle, projection, and authorization tables; complete them in M2.
+- Deploy this exact skeleton to one free Render web service with Neon PostgreSQL. Promote it into M2 rather than replacing it with a throwaway probe.
 - Verify the `qify.builtbyjuls.com` custom-domain path through Cloudflare DNS without changing the root-domain records.
 - Verify one-origin routing, Angular deep links, Render-managed HTTPS, secure cookies, and Neon PostgreSQL persistence.
 - Verify an SSE connection for at least twenty minutes with no REST requests or other client-originated traffic. Record proxy buffering, heartbeat delivery, whether the connection survives Render's idle window, reconnect behavior, and incremental deployment cost.
@@ -501,12 +506,12 @@ The schedule uses vertical slices so Angular and Spring integrate early. A local
 
 **Verification:** The exact application skeleton builds and runs locally and on Render, and a written spike result proves or rejects the intended hosting design.
 
-### Week 2 Foundation Identity and Contract
+### M2: Identity and Contract Foundation
 
 **Objective:** Create a reproducible base with one authoritative API contract.
 
 - Complete the venue eligibility, lifecycle, projection, authorization, API-command, and problem-response tables.
-- Expand the Week 1 skeleton with local PostgreSQL, Docker Compose, seed data, and the production migration structure.
+- Expand the M1 foundation with local PostgreSQL, Docker Compose, seed data, and the production migration structure.
 - Implement the state machine and transition tests.
 - Add the Angular shell and route placeholders.
 - Establish Spring Security sessions, CSRF bootstrap, demo workspace membership, participant principals, and Angular authentication state.
@@ -516,7 +521,7 @@ The schedule uses vertical slices so Angular and Spring integrate early. A local
 
 **Verification:** One command starts the stack, migrations succeed, a participant session and CSRF-protected command work, the generated client is reproducible, and CI passes.
 
-### Week 3 Customer Slice
+### M3: Customer Workflow
 
 **Objective:** Complete the customer path through the real Angular application.
 
@@ -527,7 +532,7 @@ The schedule uses vertical slices so Angular and Spring integrate early. A local
 
 **Verification:** An authenticated customer participant creates and reviews a workspace-scoped request through Angular using PostgreSQL.
 
-### Week 4 Partner Slice and Happy Path
+### M4: Partner Workflow and Local Happy Path
 
 **Objective:** Complete the local customer-to-partner workflow.
 
@@ -538,7 +543,7 @@ The schedule uses vertical slices so Angular and Spring integrate early. A local
 
 **Verification:** Separate customer and partner browser sessions complete the happy path, and both assignment limits survive races.
 
-### Week 5 Security and Public Release
+### M5: Security and Public Release
 
 **Objective:** Turn the local workflow into a credible public release.
 
@@ -552,7 +557,7 @@ The schedule uses vertical slices so Angular and Spring integrate early. A local
 
 **Verification:** The public demo works, cross-participant and cross-workspace access fails, and a fresh demo workspace can be reset safely.
 
-### Week 6 Live Tracking and Failure Paths
+### M6: Live Tracking and Failure Recovery
 
 **Objective:** Make the workflow recover from delays, cancellation, release, and connection interruption.
 
@@ -563,7 +568,7 @@ The schedule uses vertical slices so Angular and Spring integrate early. A local
 
 **Verification:** Both roles receive live updates, recover after forced interruption, and cannot leave a request stuck indefinitely.
 
-### Week 7 Hardening
+### M7: Quality Hardening
 
 **Objective:** Complete the required quality and operational evidence.
 
@@ -575,7 +580,7 @@ The schedule uses vertical slices so Angular and Spring integrate early. A local
 
 **Verification:** CI is reliable, the accessibility results are documented, and the deployed demo returns to a known state.
 
-### Week 8 Stabilization and Presentation
+### M8: Release Stabilization and Presentation
 
 **Objective:** Finish and explain the existing work without adding product behavior.
 
@@ -589,7 +594,7 @@ The schedule uses vertical slices so Angular and Spring integrate early. A local
 
 ## Application Timing
 
-Begin linking Q-ify in applications after the Week 5 deployment. Continue improving the same public repository while applying and interviewing.
+Begin linking Q-ify in applications after the M5 deployment. Continue improving the same public repository while applying and interviewing.
 
 ## Required Portfolio Material
 
@@ -664,12 +669,12 @@ Start this work only after `v1.1` is complete. Treat it as one audit-export vert
 | Frontend work expands. | Keep five route groups and integrate controls into them instead of adding pages. |
 | Angular architecture becomes elaborate. | Use standalone components, feature services, signals, and RxJS. Keep NgRx out of the core. |
 | Security consumes the schedule. | Use one-origin, workspace-bound participant sessions. Exclude registration, passwords, and external identity providers. |
-| Live updates fail behind the host. | Test the host in Week 1 and keep polling as a documented fallback. |
+| Live updates fail behind the host. | Test the host in M1 and keep polling as a documented fallback. |
 | The free Render instance starts slowly, exceeds memory, or is suspended after a quota. | Bundle Angular into the Spring Boot service, cap Hikari at three connections, measure the JVM budget, explain cold starts and quotas, and retain a demonstration video. |
 | Render sleeps before scheduled cleanup runs. | Enforce `expiresAt` on every workspace operation and use scheduled cleanup only for storage reclamation. |
 | Cloud work expands the core release. | Complete `v1.0.0` and `v1.1` first, then implement one Floci-backed audit-export slice in `v1.2`. |
 | Demo visitors collide. | Bind participants and all mutable data to isolated workspaces, expire them, and provide a customer-owned atomic reset. |
-| Documentation delays shipping. | Write only documents tied to real decisions and reserve Week 8 for presentation. |
+| Documentation delays shipping. | Write only documents tied to real decisions and reserve M8 for presentation. |
 
 ## Sources
 
@@ -695,4 +700,4 @@ Start this work only after `v1.1` is complete. Treat it as one audit-export vert
 
 ## Final Release Decision
 
-Q-ify is ready for feature implementation when the Week 1 deployable skeleton and hosting-spike results are complete. Week 2 then completes the lifecycle, projection, and authorization contract before the vertical slices expand. Keep `v1.0.0` limited to one polished workflow. Add later features only when they create visible engineering evidence or improve the portfolio demonstration.
+Q-ify is ready for feature implementation when the M1 deployable foundation and hosting-validation results are complete. M2 then completes the lifecycle, projection, and authorization contract before the vertical slices expand. Keep `v1.0.0` limited to one polished workflow. Add later features only when they create visible engineering evidence or improve the portfolio demonstration.

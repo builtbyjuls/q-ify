@@ -1,7 +1,7 @@
 # Toolchain Baseline
 
 - Verified: 2026-09-08
-- Scope: W1-01
+- Scope: ENV-01
 - Status: accepted for scaffolding
 
 ## Decision
@@ -61,7 +61,7 @@ and CDK remain exactly aligned with each other.
 | `node --version` | 24.20.0 | Matches `.nvmrc` |
 | `npm --version` | 11.19.0 | Record in `packageManager` when the frontend exists |
 | `npx --yes @angular/cli@21.2.23 version` | Angular CLI 21.2.23 on Node 24.20.0 | Exact CLI pin executes successfully |
-| `docker --version` | 29.1.3 | Available for later Week 1 tasks |
+| `docker --version` | 29.1.3 | Available for later M1 tasks |
 | `docker compose version` | 2.37.1 | Use `docker compose`, not legacy `docker-compose` |
 
 The SDKMAN default and the Java candidate in `.sdkmanrc` both resolve to

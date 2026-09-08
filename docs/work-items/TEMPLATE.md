@@ -1,7 +1,7 @@
 # <ID>: <Task Title>
 
 - Status: proposed
-- Milestone: <week or release>
+- Milestone: <milestone ID or release>
 - Owner: <person or role>
 - Depends on: <IDs or none>
 - Plan reference: <section in ../project-plan.md>
