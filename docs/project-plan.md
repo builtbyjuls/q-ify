@@ -329,7 +329,7 @@ Spring Boot 4.1 is the current supported stable line and supports Java 21. Use t
 - Latest Angular 21 LTS patch.
 - Angular CLI, Angular Material, and Angular Component Dev Kit on the same major.
 - TypeScript 5.9 as required by Angular 21.
-- Node 22 LTS with a compatible patch pinned in `.nvmrc` or `.tool-versions`.
+- Node 24 LTS with a compatible patch pinned in `.nvmrc`.
 - Angular Router and `HttpClient` with functional interceptors.
 - Typed reactive forms.
 - Signals and computed signals for local and feature state.
@@ -337,7 +337,7 @@ Spring Boot 4.1 is the current supported stable line and supports Java 21. Use t
 - Vitest, Angular TestBed, and Material component harnesses.
 - Playwright for end-to-end tests.
 
-Angular 21 is a deliberate enterprise-oriented choice. It is in long-term support, works with Node 22 and TypeScript 5.9, and avoids adopting a new major solely to appear current.
+Angular 21 is a deliberate enterprise-oriented choice. It is in long-term support, works with Node 24 and TypeScript 5.9, and avoids adopting a new major solely to appear current.
 
 Do not add NgRx, server-side rendering, or a separate Angular workspace library during the core release.
 
