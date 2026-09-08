@@ -1,0 +1,30 @@
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>System status</mat-card-title>
+    <mat-card-subtitle>Backend connection probe</mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <section
+      class="state"
+      aria-live="polite"
+      aria-atomic="true"
+      [attr.data-state]="phase()"
+    >
+      @if (isBusy()) {
+        <mat-progress-spinner
+          mode="indeterminate"
+          diameter="36"
+          [attr.aria-label]="message()"
+        />
+      }
+      <p>{{ message() }}</p>
+    </section>
+  </mat-card-content>
+
+  @if (phase() === 'error') {
+    <mat-card-actions align="end">
+      <button mat-flat-button type="button" (click)="retry()">Retry</button>
+    </mat-card-actions>
+  }
+</mat-card>

@@ -1,0 +1,16 @@
+mat-card {
+  margin-inline: auto;
+  max-width: 32rem;
+}
+
+.state {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  min-height: 4.5rem;
+  padding-block: 1rem;
+}
+
+.state p {
+  margin: 0;
+}
